@@ -1,0 +1,141 @@
+---
+title: "BA830_Project"
+author: "TingAnn Lu (U35503563)"
+date: "12/6/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(data.table)
+library(tidyverse)
+library(lfe)
+library(fixest)
+library(lubridate)
+library(stargazer)
+library(modelsummary)
+```
+
+## Import our data
+```{r}
+data <- fread('/Users/apple/Desktop/BU/BA830/menu_data_cleaned.csv')
+```
+
+
+## Preprocessing
+```{r}
+brunch = ifelse(data$brunch == 2, 0, 1)
+data$brunch <- brunch
+italian_res = ifelse(data$italian_res == 2, 0, 1)
+data$italian_res <- italian_res
+korean_res = ifelse(data$korean_res == 2, 0, 1)
+data$korean_res <- korean_res
+bbq = ifelse(data$bbq == 2, 0, 1)
+data$bbq <- bbq
+ramen= ifelse(data$ramen == 2, 0, 1)
+data$ramen <- ramen
+```
+
+```{r}
+gender = ifelse(data$gender == 1, 0, 1)
+data$gender <- gender
+age_group = ifelse(data$age_group == 2, 1, 0)
+data$age_group <- age_group
+```
+
+
+## Randomization check (gender)
+```{r}
+treat_gender <- lm(Treatment ~ gender, data)
+summary(treat_gender)
+```
+
+## Randomization check (eating_time)
+```{r}
+treat_eating_t<-lm(Treatment ~ eating_time, data)
+summary(treat_eating_t)
+```
+
+## Main effect(Treatment) on the outcome
+```{r}
+reg1 <- feols(brunch ~ Treatment, data = data)
+summary(reg1)
+reg2 <- feols(italian_res ~ Treatment, data = data)
+summary(reg2)
+reg3 <- feols(korean_res ~ Treatment, data = data)
+summary(reg3)
+reg4 <- feols(bbq ~ Treatment, data = data)
+summary(reg4)
+reg5 <- feols(ramen ~ Treatment, data = data)
+summary(reg5)
+etable(reg1, reg2, reg3, reg4, reg5)
+```
+
+## Gender v.outcome
+```{r}
+reg6 <- feols(brunch ~ gender, data = data)
+summary(reg6)
+reg7 <- feols(italian_res ~ gender, data = data)
+summary(reg7)
+reg8 <- feols(korean_res ~ gender, data = data)
+summary(reg8)
+reg9 <- feols(bbq ~ gender, data = data)
+summary(reg9)
+reg10 <- feols(ramen ~ gender, data = data)
+summary(reg10)
+etable(reg6, reg7, reg8, reg9, reg10)
+```
+## eating_time v.outcome
+```{r}
+reg11 <- feols(brunch ~ eating_time, data = data)
+summary(reg11)
+reg12 <- feols(italian_res ~ eating_time, data = data)
+summary(reg12)
+reg13 <- feols(korean_res ~ eating_time, data = data)
+summary(reg13)
+reg14 <- feols(bbq ~ eating_time, data = data)
+summary(reg14)
+reg15 <- feols(ramen ~ eating_time, data = data)
+summary(reg15)
+etable(reg11, reg12, reg13, reg14, reg15)
+```
+## Duration v. outcome
+```{r}
+reg16 <- feols(brunch ~ Duration, data = data)
+summary(reg16)
+reg17 <- feols(italian_res ~ Duration, data = data)
+summary(reg17)
+reg18 <- feols(korean_res ~ Duration, data = data)
+summary(reg18)
+reg19 <- feols(bbq ~ Duration, data = data)
+summary(reg19)
+reg20 <- feols(ramen ~ Duration, data = data)
+summary(reg20)
+etable(reg16, reg17, reg18, reg19, reg20)
+```
+
+## Covariates
+```{r}
+reg21 <- feols(brunch ~ Treatment+gender+Duration+eating_time, data = data)
+summary(reg21)
+reg22 <- feols(italian_res ~ Treatment+gender+Duration+eating_time, data = data)
+summary(reg22)
+reg23 <- feols(korean_res ~ Treatment+gender+Duration+eating_time, data = data)
+summary(reg23)
+reg24 <- feols(bbq ~ Treatment+gender+Duration+eating_time, data = data)
+summary(reg24)
+reg25 <- feols(ramen ~ Treatment+gender+Duration+eating_time, data = data)
+summary(reg25)
+etable(reg21, reg22, reg23, reg24, reg25)
+```
+
+
+```{r}
+library(ggplot2)
+agg_data <- data[, list(brunch), list(time_of_day)]
+date_brunch <- aggregate(brunch ~ time_of_day, agg_data, sum)
+date_brunch$Time <- as.factor(date_brunch$time_of_day)
+agg_plot <- ggplot(date_brunch, aes(x = time_of_day, y = brunch, fill = Time)) + geom_bar(stat = 'identity') + ylab('sum_orders') + theme(axis.text.x = element_text(angle=45, hjust=1)) 
+agg_plot
+```
